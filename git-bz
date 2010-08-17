@@ -752,6 +752,12 @@ def get_connection(host, https):
 
     return connections[identifier]
 
+def kill_connection(host, https):
+    identifier = (host, https)
+    if identifier in connections:
+        del connections[identifier]
+
+
 class BugServer(object):
     def __init__(self, host, https):
         self.host = host
@@ -771,10 +777,24 @@ class BugServer(object):
         headers['User-Agent'] = "git-bz"
 
         seen_urls = []
+        retries = 0
         connection = get_connection(self.host, self.https)
         while True:
-            connection.request(method, url, data, headers)
-            response = connection.getresponse()
+
+            # BMO seems to generate some "bad status line" exception intermittently.
+            try:
+              connection.request(method, url, data, headers)
+              response = connection.getresponse()
+            except httplib.BadStatusLine:
+              retries = retries + 1
+              print "Got bad status line - retrying..."
+              connection.close()
+              kill_connection(self.host, self.https)
+              time.sleep(2)
+              connection = get_connection(self.host, self.https)
+              continue
+            retries = 0
+
             seen_urls.append(url)
 
             # Redirect status codes:
