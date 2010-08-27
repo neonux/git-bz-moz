@@ -1079,7 +1079,7 @@ class Bug(object):
         print "Bug %d - %s" % (self.id, short_desc)
         print self.get_url()
 
-    def create_patch(self, description, comment, filename, data, obsoletes=[], status='none'):
+    def create_patch(self, description, comment, filename, data, obsoletes=[], status='none', review=[], superreview=[]):
         fields = {}
         fields['bugid'] = str(self.id)
         fields['action'] = 'insert'
@@ -1092,6 +1092,15 @@ class Bug(object):
             # this will produce multiple parts in the encoded data with the
             # name 'obsolete' for each item in the list
             fields['obsolete'] = map(str, obsoletes)
+
+        # Support for flagging for review/superreview. I have no idea if this works on
+        # installations other than bugzilla.mozilla.org.
+        if review:
+            fields['flag_type-4'] = '?'
+            fields['requestee_type-4'] = ",".join(review)
+        if superreview:
+            fields['flag_type-5'] = '?'
+            fields['requestee_type-5'] = ",".join(superreview)
 
         files = { 'data': (filename, 'text/plain', data) }
 
@@ -1426,6 +1435,9 @@ def edit_attachment_comment(bug, initial_description, initial_body):
     template.write("\n\n")
     template.write(initial_body)
     template.write("\n\n")
+    template.write("#Review: reviewer1@example.com\n")
+    template.write("#Review: reviewer2@example.com\n")
+    template.write("#Super-Review: superreviewer@example.com\n\n")
     if len(bug.patches) > 0:
         for patch in bug.patches:
             template.write("#Obsoletes: %d - %s\n" % (patch.attach_id, patch.description))
@@ -1440,22 +1452,30 @@ def edit_attachment_comment(bug, initial_description, initial_body):
     lines = edit_template(template.getvalue())
 
     obsoletes= []
-    def filter_obsolete(line):
+    review= []
+    superreview= []
+    def filter_special(line):
         m = re.match("^\s*Obsoletes\s*:\s*([\d]+)", line)
+        r = re.match("^\s*Review\s*:\s*([\S]+@[\S]+\.[\w]+)\s*$", line)
+        sr = re.match("^\s*Super-Review\s*:\s*([\S]+@[\S]+\.[\w]+)\s*$", line)
         if m:
             obsoletes.append(int(m.group(1)))
             return False
+        elif r:
+            review.append(r.group(1))
+        elif sr:
+            superreview.append(sr.group(1))
         else:
             return True
 
-    lines = filter(filter_obsolete, lines)
+    lines = filter(filter_special, lines)
 
     description, comment = split_subject_body(lines)
 
     if description == "":
         die("Empty description, aborting")
 
-    return description, comment, obsoletes
+    return description, comment, obsoletes, review, superreview
 
 def attach_commits(bug, commits, include_comments=True, edit_comments=False, status='none'):
     # We want to attach the patches in chronological order
@@ -1470,11 +1490,11 @@ def attach_commits(bug, commits, include_comments=True, edit_comments=False, sta
         else:
             body = None
         if edit_comments:
-            description, body, obsoletes = edit_attachment_comment(bug, commit.subject, body)
+            description, body, obsoletes, review, superreview = edit_attachment_comment(bug, commit.subject, body)
         else:
             description = commit.subject
             obsoletes = []
-        bug.create_patch(description, body, filename, patch, obsoletes=obsoletes, status=status)
+        bug.create_patch(description, body, filename, patch, obsoletes=obsoletes, status=status, review=review, superreview=superreview)
 
 def do_attach(*args):
     if len(args) == 1:
