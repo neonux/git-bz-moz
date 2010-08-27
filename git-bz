@@ -1456,8 +1456,17 @@ def edit_attachment_comment(bug, initial_description, initial_body):
     superreview= []
     def filter_special(line):
         m = re.match("^\s*Obsoletes\s*:\s*([\d]+)", line)
+
         r = re.match("^\s*Review\s*:\s*([\S]+@[\S]+\.[\w]+)\s*$", line)
+        # Support :names
+        if not r:
+            r = re.match("^\s*Review\s*:\s*(:[\w]+)\s*$", line)
+
         sr = re.match("^\s*Super-Review\s*:\s*([\S]+@[\S]+\.[\w]+)\s*$", line)
+        # Support names
+        if not sr:
+            sr = re.match("^\s*Super-Review\s*:\s*(:[\w]+)\s*$", line)
+
         if m:
             obsoletes.append(int(m.group(1)))
             return False
