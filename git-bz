@@ -1096,11 +1096,17 @@ class Bug(object):
         # Support for flagging for review/superreview. I have no idea if this works on
         # installations other than bugzilla.mozilla.org.
         if review:
-            fields['flag_type-4'] = '?'
-            fields['requestee_type-4'] = ",".join(review)
+            if review[0] == ':me+':
+                fields['flag_type-4'] = '+'
+            else:
+                fields['flag_type-4'] = '?'
+                fields['requestee_type-4'] = ",".join(review)
         if superreview:
-            fields['flag_type-5'] = '?'
-            fields['requestee_type-5'] = ",".join(superreview)
+            if superreview[0] == ':me+':
+                fields['flag_type-5'] = '+'
+            else:
+                fields['flag_type-5'] = '?'
+                fields['requestee_type-5'] = ",".join(superreview)
 
         files = { 'data': (filename, 'text/plain', data) }
 
@@ -1437,7 +1443,9 @@ def edit_attachment_comment(bug, initial_description, initial_body):
     template.write("\n\n")
     template.write("#Review: reviewer1@example.com\n")
     template.write("#Review: reviewer2@example.com\n")
+    template.write("#Review: :me+\n")
     template.write("#Super-Review: superreviewer@example.com\n\n")
+    template.write("#Super-Review: :me+\n")
     if len(bug.patches) > 0:
         for patch in bug.patches:
             template.write("#Obsoletes: %d - %s\n" % (patch.attach_id, patch.description))
@@ -1460,12 +1468,12 @@ def edit_attachment_comment(bug, initial_description, initial_body):
         r = re.match("^\s*Review\s*:\s*([\S]+@[\S]+\.[\w]+)\s*$", line)
         # Support :names
         if not r:
-            r = re.match("^\s*Review\s*:\s*(:[\w]+)\s*$", line)
+            r = re.match("^\s*Review\s*:\s*(:[\w]+\+?)\s*$", line)
 
         sr = re.match("^\s*Super-Review\s*:\s*([\S]+@[\S]+\.[\w]+)\s*$", line)
         # Support names
         if not sr:
-            sr = re.match("^\s*Super-Review\s*:\s*(:[\w]+)\s*$", line)
+            sr = re.match("^\s*Super-Review\s*:\s*(:[\w]+\+?)\s*$", line)
 
         if m:
             obsoletes.append(int(m.group(1)))
