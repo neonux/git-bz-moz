@@ -207,7 +207,7 @@ def get_patch(commit):
     # We could pass through -M as an option, but I think you basically always
     # want it; showing renames as renames rather than removes/adds greatly
     # improves readability.
-    return git.format_patch(commit.id + "^.." + commit.id, stdout=True, M=True, unified="8")
+    return git.diff(commit.id + "^.." + commit.id, M=True, unified="8")
 
 def get_body(commit):
     return git.log(commit.id + "^.." + commit.id, pretty="format:%b")
@@ -1441,6 +1441,7 @@ def edit_attachment_comment(bug, initial_description, initial_body):
     template.write("\n\n")
     template.write(initial_body)
     template.write("\n\n")
+    template.write("Commit-Message: " + initial_description + "\n\n");
     template.write("#Review: reviewer1@example.com\n")
     template.write("#Review: reviewer2@example.com\n")
     template.write("#Review: :me+\n")
@@ -1462,6 +1463,8 @@ def edit_attachment_comment(bug, initial_description, initial_body):
     obsoletes= []
     review= []
     superreview= []
+    commit_message = []
+
     def filter_special(line):
         m = re.match("^\s*Obsoletes\s*:\s*([\d]+)", line)
 
@@ -1475,6 +1478,9 @@ def edit_attachment_comment(bug, initial_description, initial_body):
         if not sr:
             sr = re.match("^\s*Super-Review\s*:\s*(:[\w]+\+?)\s*$", line)
 
+        # Parse commit messages
+        c = re.match("^\s*Commit-Message\s*:\s*(.*)\s*$", line)
+
         if m:
             obsoletes.append(int(m.group(1)))
             return False
@@ -1482,6 +1488,8 @@ def edit_attachment_comment(bug, initial_description, initial_body):
             review.append(r.group(1))
         elif sr:
             superreview.append(sr.group(1))
+        elif c:
+            commit_message.append(c.group(1))
         else:
             return True
 
@@ -1492,7 +1500,11 @@ def edit_attachment_comment(bug, initial_description, initial_body):
     if description == "":
         die("Empty description, aborting")
 
-    return description, comment, obsoletes, review, superreview
+    # Work around inner-method variable access weirdness
+    if commit_message:
+        commit_message = commit_message[0]
+
+    return description, comment, obsoletes, commit_message, review, superreview
 
 def attach_commits(bug, commits, include_comments=True, edit_comments=False, status='none'):
     # We want to attach the patches in chronological order
@@ -1507,11 +1519,14 @@ def attach_commits(bug, commits, include_comments=True, edit_comments=False, sta
         else:
             body = None
         if edit_comments:
-            description, body, obsoletes, review, superreview = edit_attachment_comment(bug, commit.subject, body)
+            description, body, obsoletes, commit_message, review, superreview = edit_attachment_comment(bug, commit.subject, body)
         else:
             description = commit.subject
+            commit_message = commit.subject
             obsoletes = []
-        bug.create_patch(description, body, filename, patch, obsoletes=obsoletes, status=status, review=review, superreview=superreview)
+        if commit_message:
+            patch = commit_message + "\n\n" + patch
+        bug.create_patch(description, body, filename,  patch, obsoletes=obsoletes, status=status, review=review, superreview=superreview)
 
 def do_attach(*args):
     if len(args) == 1:
