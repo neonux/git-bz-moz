@@ -1441,7 +1441,7 @@ def edit_attachment_comment(bug, initial_description, initial_body):
     template.write("\n\n")
     template.write(initial_body)
     template.write("\n\n")
-    template.write("Commit-Message: " + initial_description + "\n\n");
+    template.write("Commit-Message: Bug %d - %s.\n\n" % (bug.id, bug.short_desc));
     template.write("#Review: reviewer1@example.com\n")
     template.write("#Review: reviewer2@example.com\n")
     template.write("#Review: :me+\n")
