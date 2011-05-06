@@ -258,6 +258,10 @@ Firefox 3 and Epiphany are supported, and only on Linux. Patches to
 add more support and to allow configuring username/password directly
 per bug tracker accepted.
 
+By default, when using Firefox profiles, git-bz will use your the default
+profile specified in profiles.ini. You may override this using the config
+variable +bz.firefox-profile+.
+
 BUG REFERENCES
 --------------
 Ways to refer to a bug:

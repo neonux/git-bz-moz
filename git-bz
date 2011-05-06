@@ -266,6 +266,12 @@ def get_add_url_method():
     except CalledProcessError:
         return "body-append:%u"
 
+def get_firefox_profile_pref():
+    try:
+        return git.config('bz.firefox-profile', get=True)
+    except CalledProcessError:
+        return ""
+
 # Per-tracker configuration variables
 # ===================================
 
@@ -553,6 +559,7 @@ def get_bugzilla_cookies_ff3(host):
         profiles_dir = os.path.expanduser('~/.mozilla/firefox')
 
     profile_path = None
+    specific_profile = get_firefox_profile_pref()
 
     cp = RawConfigParser()
     cp.read(os.path.join(profiles_dir, "profiles.ini"))
@@ -560,7 +567,13 @@ def get_bugzilla_cookies_ff3(host):
         if not cp.has_option(section, "Path"):
             continue
 
-        if (not profile_path or
+        # If we're looking for a specific profile, just check for that
+        if specific_profile != "":
+            if cp.has_option(section, "Name") and cp.get(section, "Name").strip() == specific_profile:
+                profile_path = os.path.join(profiles_dir, cp.get(section, "Path").strip())
+
+        # Otherwise use the profile tagged as default
+        elif (not profile_path or
             (cp.has_option(section, "Default") and cp.get(section, "Default").strip() == "1")):
             profile_path = os.path.join(profiles_dir, cp.get(section, "Path").strip())
 
