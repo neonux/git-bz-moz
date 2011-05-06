@@ -207,7 +207,7 @@ def get_patch(commit):
     # We could pass through -M as an option, but I think you basically always
     # want it; showing renames as renames rather than removes/adds greatly
     # improves readability.
-    return git.diff(commit.id + "^.." + commit.id, M=True, unified="8")
+    return git.diff(commit.id + "^.." + commit.id, M=True, binary=True, unified="8") + "\n"
 
 def get_body(commit):
     return git.log(commit.id + "^.." + commit.id, pretty="format:%b")
