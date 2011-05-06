@@ -502,6 +502,12 @@ def do_get_cookies_from_sqlite(host, cookies_sqlite, browser, query, chromium_ti
                 result[name] = value
 
         return result
+    # Let the user know what might be going wrong in the case of a cryptic database error.
+    except sqlite.DatabaseError:
+        print ("Python threw a database error. A likely cause is that your version of python "
+               "doesn't have a recent enough sqlite module to support this cookie database. "
+               "Try upgrading your python sqlite module.")
+        raise
     finally:
         connection.close()
 
