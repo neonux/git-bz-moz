@@ -83,6 +83,7 @@ import xmlrpclib
 import urlparse
 from xml.etree.cElementTree import ElementTree
 import base64
+import platform
 
 # Globals
 # =======
@@ -540,7 +541,11 @@ def get_cookies_from_sqlite_xulrunner(host, cookies_sqlite, name):
                                    "select name,value,path,expiry from moz_cookies where host = :host")
 
 def get_bugzilla_cookies_ff3(host):
-    profiles_dir = os.path.expanduser('~/.mozilla/firefox')
+    if (platform.system() == "Darwin"):
+        profiles_dir = os.path.expanduser('~/Library/Application Support/Firefox')
+    else:
+        profiles_dir = os.path.expanduser('~/.mozilla/firefox')
+
     profile_path = None
 
     cp = RawConfigParser()
