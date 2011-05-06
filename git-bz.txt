@@ -55,7 +55,7 @@ git bz attach 43215 HEAD
 This automatically rewrites the commit to add the URL of the bug to
 the commit message for future reference. The reporter finds some
 problems in testing, so you come up with a new version of the change
-and modify your commit using 'git command --amend'. To attach the new
+and modify your commit using 'git commit --amend'. To attach the new
 version, you run:
 
 ----------------------------------------
@@ -94,7 +94,8 @@ COMMON OPTIONS
 -u;;
 --add-url;;
 	Rewrite commits to add the bug URL. (This is the default and will not normally
-	need to be specified.)
+	need to be specified; you can change the default using the bz.add-url config
+	variable.)
 
 -n;;
 --no-add-url;;
@@ -302,6 +303,10 @@ git config bz.add-url-method body-append:%u
 git config bz.add-url-method subject-prepend:Bug %d -
 ----------------------------------------
 
+If you want to disable adding URLs by default, you can use the +bz.add-url+
+config variable, which defaults to false. The -u/--add-url and -n/--no-add-url
+command line options override the config variable.
+
 ALIASES
 -------
 You can create short aliases for different bug trackers as follows
@@ -336,11 +341,22 @@ PER-TRACKER CONFIGURATION
 -------------------------
 git-bz needs some configuration specific to the bugzilla instance (tracker),
 in particular it needs to know initial field values to use when submitting
-bugs; legal values for some fields depend on the instance.
+bugs; legal values for some fields depend on the instance. Initial field
+values are specified by the config variable +default-<field-name>+.
 
-You can also set whether to use http or https by setting the 'https' variabe
-For https, *certificates are not checked* so you are completely vulnerable
-to DNS spoofing and man-in-the-middle attacks. Blame httplib.
+In addition to initial field values, some other variables can be configured
+per tracker:
+
+auth-user:: the user to use for basic HTTP authentication. Since
+  basic auth sends passwords in clear text, you should not use this unless
+  you are also using https.
+auth-password:: the password to use for basic HTTP authentication.
+https:: use https rather than http.
+  For https, *certificates are not checked* so you are completely vulnerable
+  to DNS spoofing and man-in-the-middle attacks. Blame httplib.
+path:: the root path of the bugzilla installation. If bugs are accessed
+  as http://example.com/bugzilla/show_bug.cgi, this variable would be set
+  to /bugzilla.
 
 Configuration comes from 4 sources, in descending order of priority
 
