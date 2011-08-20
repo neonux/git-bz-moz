@@ -56,7 +56,7 @@ default-priority = Normal
 CONFIG['bugzilla.mozilla.org'] = \
 """
 https = true
-default-priority = ---
+default-priority = --
 """
 
 ################################################################################
