@@ -1630,6 +1630,8 @@ def attach_commits(bug, commits, include_comments=True, edit_comments=False, sta
             description = commit.subject
             commit_message = commit.subject
             obsoletes = []
+            review = []
+            superreview = []
         if commit_message:
             patch = commit_message + "\n\n" + patch
         bug.create_patch(description, body, filename,  patch, obsoletes=obsoletes, status=status, review=review, superreview=superreview)
